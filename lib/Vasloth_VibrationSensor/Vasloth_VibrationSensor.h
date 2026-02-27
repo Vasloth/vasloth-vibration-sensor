@@ -5,40 +5,58 @@
 
 class Vasloth_VibrationSensor {
 public:
-    Vasloth_VibrationSensor(uint8_t pin);
+  explicit Vasloth_VibrationSensor(uint8_t pin);
 
-    void begin();
-    void update();
+  void begin();
+  void update();
 
-    bool vibrationDetected();
-    long getEnergy();
-    int getBaseline();
+  // === Telemetría / estado ===
+  bool isWarmingUp() const;
+  bool isBaselineReady() const;
+  int  getBaseline() const;
 
-    void setThresholds(int deltaMin, long energiaMin, int persistencia);
+  long getEnergyCurrentWindow() const;   // energía acumulada en la ventana actual
+  long getEnergyLastWindow() const;      // energía de la última ventana cerrada
+
+  int  getPersistenceWindows() const;    // ventanas con vibración consecutivas
+  bool vibrationDetected() const;        // true si persistencia >= requerida
+
+  // === Configuración (usuario) ===
+  void setThresholds(int deltaMin, long energiaUmbral, int persistenciaReq);
+
+  void setWarmupMs(int ms);
+  void setSampleMs(int ms);
+  void setWindowMs(int ms);
 
 private:
-    uint8_t _pin;
+  uint8_t _pin;
 
-    // Parámetros
-    const int _warmupTime = 2000;
-    const int _sampleMs = 5;
-    const int _windowMs = 1000;
+  // --- Parámetros configurables ---
+  int _tiempoWarmup = 2000;
+  int _sampleMs     = 5;
+  int _ventanaMs    = 1000;
 
-    int _deltaMin = 40;
-    long _energyThreshold = 6000;
-    int _persistenciaRequerida = 3;
+  int  _umbralDeltaMin = 40;
+  long _umbralEnergia  = 6000;
 
-    // Estado interno
-    unsigned long _tStart;
-    unsigned long _tSample;
-    unsigned long _tWindow;
+  int _persistenciaRequerida = 3;
 
-    bool _baselineReady = false;
-    int _baseline = 0;
-    long _energy = 0;
-    int _windowsWithVibration = 0;
+  // --- Estado interno ---
+  unsigned long _t0 = 0;
+  unsigned long _tVentana = 0;
+  unsigned long _tSample = 0;
 
-    bool _vibrationFlag = false;
+  int  _baseline = 0;
+  bool _baselineListo = false;
+
+  long _energia = 0;
+  long _energiaUltimaVentana = 0;
+
+  int  _ventanasConVibracion = 0;
+  bool _vibracionReal = false;
+
+  // Helper interno para reset limpio
+  void resetRuntimeState(unsigned long ahora);
 };
 
 #endif
